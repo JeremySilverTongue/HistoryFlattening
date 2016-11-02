@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import tempfile
+
 import git
 
 IGNORE_PATTERNS = ('.git', ".DS_Store")
@@ -46,7 +47,7 @@ def flatten(repo_dir, target_dir, student, develop_branches, remove_branches, li
             repo.git.stash()
 
             for develop in develop_branches:
-                to_temp_dir(repo, repo_dir, develop, temp_dir, flat)
+                to_temp_dir(repo, repo_dir, develop, temp_dir, flat, links)
             if links:
                 insert_diff_links(temp_dir)
 
@@ -72,7 +73,7 @@ def remove_local_branches(repo, student, develop_branches):
             repo.git.branch(branch.name, "-D")
 
 
-def to_temp_dir(repo, repo_dir, develop, temp_dir, flat):
+def to_temp_dir(repo, repo_dir, develop, temp_dir, flat, links):
     for rev in repo.git.rev_list(develop).split("\n"):
         commit = repo.commit(rev)
         branch_name = clean_commit_message(commit.message)
@@ -93,10 +94,12 @@ def to_temp_dir(repo, repo_dir, develop, temp_dir, flat):
 
             shutil.copytree(repo_dir, target_dir,
                             ignore=shutil.ignore_patterns(*IGNORE_PATTERNS))
-            with open(os.path.join(target_dir, "README.md"), "a") as readme:
-                print branch_name
-                number, _, name = branch_name.split("-")
-                readme.write(DIFF_FORMAT.format(number=number, name=name))
+
+            if links:
+                with open(os.path.join(target_dir, "README.md"), "a") as readme:
+                    print branch_name
+                    number, _, name = branch_name.split("-")
+                    readme.write(DIFF_FORMAT.format(number=number, name=name))
 
 
 def clean_commit_message(message):
